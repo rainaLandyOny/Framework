@@ -1,35 +1,48 @@
 @echo off
-setlocal
 
-rem Définir le nom du projet
-set "projet=framework"
+:: Déclaration des variables
+set "work_dir=C:\Users\Raina\Documents\Framework"
+set "temp=%work_dir%\temp"
+set "web=%work_dir%\web"
+set "lib=%work_dir%\lib"
+set "web_apps=C:\Server\tomcat\webapps"
+set "war_name=FirstMVC"
+set "Binary=%work_dir%\bin"
 
-rem Définir le chemin d'accès au répertoire des sources et au répertoire de destination des fichiers compilés
-set "src=.\src"
-set "bin=.\bin"
-set "LibTestDestination=..\TestFramework\lib"
+:: Effacer le dossier [temp]
+if exist "%temp%" (
+    rd /s /q "%temp%"
+)
 
-rem Chemin vers le répertoire contenant les bibliothèques nécessaires
-set "libDirectory=.\lib"
+:: Créer la structure de dossier
+mkdir "%temp%\WEB-INF\lib"
+mkdir "%temp%\WEB-INF\classes"
+mkdir "%temp%\WEB-INF\views"
 
-rem lister les packages du source
-dir /s /B "%src%\*.java" > sources.txt
+:: Copier le contenu de [web] dans [temp]
+xcopy /E /y "%web%\*" "%temp%\WEB-INF\views"
+xcopy /E /y "%Binary%\*" "%temp%\WEB-INF\classes"
 
-:: Compiler les fichiers java en utilisant les jar
-javac -d "%bin%" -cp "%libDirectory%\*" @sources.txt
+:: Copier le fichier [web_xml] vers [temp] + "\WEB-INF"
+copy "%work_dir%\config\web.xml" "%temp%\WEB-INF"
+copy "%work_dir%\config\dispatcher-servlet.xml" "%temp%\WEB-INF"
 
-rem Aller dans le répertoire de destination des fichiers compilés
-cd "%bin%"
+:: Copier les fichiers .jar dans [lib] vers [temp] + "\WEB-INF\lib"
+xcopy /s /i "%lib%\*.jar" "%temp%\WEB-INF\lib"
 
-rem Compresser dans un fichier jar
-jar -cvf "../lib/%projet%.jar" *
+:: Créer un fichier .war nommé [war_name].war à partir du dossier [temp] et son contenu dans le dossier [work_dir]
+cd "%temp%"
+jar cf "%work_dir%\%war_name%.war" *
 
-echo Fichier .jar créé : %projet%.jar
+:: Effacer le fichier .war dans [web_apps] s'il existe
+if exist "%web_apps%\%war_name%.war" (
+    del /f /q "%web_apps%\%war_name%.war"
+)
 
-cd ..
+:: Copier le fichier .war vers [web_apps]
+copy /y "%work_dir%\%war_name%.war" "%web_apps%"
 
-xcopy /E /I /Y "%libDirectory%\" "%LibTestDestination%"
+del /f /q "%work_dir%\%war_name%.war"
 
-del sources.txt
-
-endlocal
+echo Déploiement terminé.
+@REM pause
